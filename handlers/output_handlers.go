@@ -13,7 +13,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	signal := channels.Signal{
 		ID:      1,
 		Payload: "Hello, from route!",
-		Context: r.Context().Done(), // Pass request context for cancellation.
+		// Context: r.Context().Done(), // Pass request context for cancellation.
 	}
 
 	// Attempt to send the signal to InputChan.
@@ -25,18 +25,20 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Wait for a response from OutputChan1 or cancellation.
+	// Process signals from OutputChan1 or cancellation.
+	var result []string
 	select {
-	case <-channels.OutputChan1:
-		fmt.Fprintf(w, "Signal received from OutputChan1.\n")
+	case signal := <-channels.OutputChan1:
+		result = append(result, fmt.Sprintf("Signal received from OutputChan1: %v", signal.Payload))
 	case <-r.Context().Done():
 		fmt.Fprintf(w, "Request has been canceled while waiting for OutputChan1.\n")
 		return
 	}
 
-	// Write a final response.
-	w.Write([]byte("Final response written.\n"))
-
-	// If want to write formated use the below:
-	// fmt.Fprintf(w, "Signal response based on status.\n")
+	// Aggregate results and send them all at once.
+	fmt.Fprintf(w, "Final response written.\n")
+	fmt.Fprintf(w, "Signals processed: \n")
+	for _, line := range result {
+		fmt.Fprintf(w, "%s\n", line)
+	}
 }
