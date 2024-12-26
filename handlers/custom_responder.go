@@ -5,6 +5,11 @@ import (
 	"net/http"
 )
 
+type Payload struct {
+	Event   string
+	Message string
+}
+
 type CustomResponseWriter struct {
 	http.ResponseWriter
 	flusher http.Flusher
@@ -44,7 +49,7 @@ func (cw *CustomResponseWriter) Stream(data string) {
 	cw.ResponseWriter.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 	cw.ResponseWriter.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 	cw.ResponseWriter.Header().Set("Access-Control-Expose-Headers", "Content-Type")
-	
+
 	// Set the Content-Type to text/event-stream for streaming updates
 	cw.ResponseWriter.Header().Set("Content-Type", "text/event-stream")
 	cw.ResponseWriter.Header().Set("Cache-Control", "no-cache")
@@ -57,3 +62,27 @@ func (cw *CustomResponseWriter) Stream(data string) {
 	}
 }
 
+// New function to stream a Payload
+func (cw *CustomResponseWriter) StreamPayload(payload Payload) {
+	// Set CORS headers (if not already set)
+	cw.ResponseWriter.Header().Set("Access-Control-Allow-Origin", "*")
+	cw.ResponseWriter.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	cw.ResponseWriter.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	cw.ResponseWriter.Header().Set("Access-Control-Expose-Headers", "Content-Type")
+
+	// Set the Content-Type to text/event-stream for streaming updates
+	cw.ResponseWriter.Header().Set("Content-Type", "text/event-stream")
+	cw.ResponseWriter.Header().Set("Cache-Control", "no-cache")
+	cw.ResponseWriter.Header().Set("Connection", "keep-alive")
+
+	// Format the event and message
+	if payload.Event != "" {
+		fmt.Fprintf(cw.ResponseWriter, "event: %s\n", payload.Event)
+	}
+	fmt.Fprintf(cw.ResponseWriter, "data: %s\n\n", payload.Message)
+
+	// Flush the data immediately
+	if cw.flusher != nil {
+		cw.flusher.Flush()
+	}
+}
