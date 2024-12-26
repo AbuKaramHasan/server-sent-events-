@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{.Title}}</title>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const eventSource = new EventSource("/sse?stream=true");
+            const updatesDiv = document.getElementById("updates");
+
+            eventSource.onmessage = function (event) {
+                const newMessage = document.createElement("p");
+                newMessage.textContent = event.data;
+                updatesDiv.appendChild(newMessage);
+            };
+
+            eventSource.onerror = function () {
+                console.error("Connection lost");
+                eventSource.close();
+            };
+        });
+    </script>
+</head>
+<body>
+    <h1>{{.Title}}</h1>
+    <div id="updates">
+        <p>Waiting for real-time updates...</p>
+    </div>
+</body>
+</html>
