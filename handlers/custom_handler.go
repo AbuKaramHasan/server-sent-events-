@@ -5,6 +5,6 @@ import (
 )
 
 func CustomHandler(w http.ResponseWriter, r *http.Request) {
-	cw := NewCustomResponseWrite(w)
+	cw := CustomResponseWriter{}.New(w) // Mimics a static-like constructor.
 	cw.Stream("Starting to stream updates...")
 }
