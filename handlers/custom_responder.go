@@ -76,10 +76,9 @@ func (cw *CustomResponseWriter) StreamPayload(payload Payload) {
 	cw.ResponseWriter.Header().Set("Connection", "keep-alive")
 
 	// Format the event and message
-	if payload.Event != "" {
-		fmt.Fprintf(cw.ResponseWriter, "event: %s\n", payload.Event)
-	}
-	fmt.Fprintf(cw.ResponseWriter, "data: %s\n\n", payload.Message)
+	fmt.Fprintf(cw.ResponseWriter, "event: %s\ndata: %s\n\n", payload.Event, payload.Message)
+
+	// Use a single `fmt.Fprintf` statement to send the payload as SSE
 
 	// Flush the data immediately
 	if cw.flusher != nil {
