@@ -5,47 +5,55 @@ import (
 	"net/http"
 )
 
-type CustomResponseWritter struct {
+type CustomResponseWriter struct {
 	http.ResponseWriter
 	flusher http.Flusher
 }
 
-func NewCustomResponseWrite(w http.ResponseWriter) *CustomResponseWritter {
-	if flusher, ok := w.(http.Flusher); !ok {
-		fmt.Println("ResponseWriter does not support Flusher interface")
-		return &CustomResponseWritter{
-			ResponseWriter: w}
-	} else {
-		return &CustomResponseWritter{
-			ResponseWriter: w,
-			flusher:        flusher,
-		}
+// New creates a CustomResponseWriter with defaults.
+// This uses a receiver to set up a CustomResponseWriter conveniently.
+func (CustomResponseWriter) New(w http.ResponseWriter) CustomResponseWriter {
+	cw := CustomResponseWriter{
+		ResponseWriter: w,
+	}
+	if flusher, ok := w.(http.Flusher); ok {
+		cw.flusher = flusher
+	}
+	return cw
+}
+
+func (cw *CustomResponseWriter) WriteHeader(statusCode int) {
+	cw.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (cw *CustomResponseWriter) Write(data []byte) (int, error) {
+	cw.flusher.Flush()
+	return cw.ResponseWriter.Write(data)
+
+}
+
+func (cw *CustomResponseWriter) Flush() {
+	if cw.flusher != nil {
+		cw.flusher.Flush()
 	}
 }
 
-func (w *CustomResponseWritter) WriteHeader(statusCode int) {
-	w.ResponseWriter.WriteHeader(statusCode)
-}
-
-func (w *CustomResponseWritter) Write(data []byte) (int, error) {
-	w.flusher.Flush()
-	return w.ResponseWriter.Write(data)
-
-}
-
-func (w *CustomResponseWritter) Flush() {
-	if w.flusher != nil {
-		w.flusher.Flush()
-	}
-}
-
-func (w *CustomResponseWritter) Stream(data string) {
+func (cw *CustomResponseWriter) Stream(data string) {
+	// Set CORS headers
+	cw.ResponseWriter.Header().Set("Access-Control-Allow-Origin", "*")
+	cw.ResponseWriter.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	cw.ResponseWriter.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	cw.ResponseWriter.Header().Set("Access-Control-Expose-Headers", "Content-Type")
+	
 	// Set the Content-Type to text/event-stream for streaming updates
-	w.ResponseWriter.Header().Set("Content-Type", "text/event-stream")
-	w.ResponseWriter.Header().Set("Cache-Control", "no-cache")
-	w.ResponseWriter.Header().Set("Connection", "keep-alive")
-	fmt.Fprintf(w.ResponseWriter, "data: %s\n\n", data)
-	if w.flusher != nil {
-		w.flusher.Flush()
+	cw.ResponseWriter.Header().Set("Content-Type", "text/event-stream")
+	cw.ResponseWriter.Header().Set("Cache-Control", "no-cache")
+	cw.ResponseWriter.Header().Set("Connection", "keep-alive")
+
+	// Write the data in the SSE (Server-Sent Events) format
+	fmt.Fprintf(cw.ResponseWriter, "data: %s\n\n", data)
+	if cw.flusher != nil {
+		cw.flusher.Flush()
 	}
 }
+
