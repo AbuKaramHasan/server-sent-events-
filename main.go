@@ -25,6 +25,7 @@ func main() {
 	http.HandleFunc("/msg", handlers.MsgHandler)
 	http.HandleFunc("/event", handlers.EventHandler)
 	http.HandleFunc("/sse", handlers.SSEHandler)
+	http.HandleFunc("/custom", handlers.CustomHandler)
 
 	go func() {
 		fmt.Println("Starting server on :8080...")
